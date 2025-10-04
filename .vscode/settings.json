@@ -1,0 +1,6 @@
+{
+    "php.validate.enable": true,
+    "php.problems.exclude": {
+        "app/Database/Migrations/**": true
+    }
+}
