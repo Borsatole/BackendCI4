@@ -23,7 +23,6 @@ class UsuarioController extends BaseController
         /** @var object $usuarioLogado */
         $usuarioLogado = $this->request->user ?? null;
 
-
         $perPage = 10;
         $page = $this->request->getVar('page') ?? 1;
 
@@ -39,11 +38,9 @@ class UsuarioController extends BaseController
                 'paginaAtual' => $pager->getCurrentPage(),
                 'ultimaPagina' => $pager->getPageCount()
             ],
-            'usuarioLogado' => $usuarioLogado
+
         ]);
     }
-
-
 
     public function show($id = null)
     {

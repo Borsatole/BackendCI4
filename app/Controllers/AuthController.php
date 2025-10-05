@@ -5,7 +5,8 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 
 use App\Models\Usuario;
-use App\Models\TiposDeUsuarios;
+use App\Models\NiveisModel;
+
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -13,15 +14,19 @@ use Firebase\JWT\Key;
 class AuthController extends BaseController
 {
     protected $usuarioModel;
-    // private $jwtSecret = 'SUA_CHAVE_SECRETA_AQUI'; // altere para algo seguro
 
     public function __construct()
     {
         $this->usuarioModel = new Usuario();
+
     }
 
     public function login()
     {
+        // Models
+        $NiveisModel = new NiveisModel();
+
+
         $request = service('request');
         $email = $request->getVar('email');
         $senha = $request->getVar('password');
@@ -36,15 +41,7 @@ class AuthController extends BaseController
 
         // Busca o usuário pelo email
         $usuario = $this->usuarioModel->where('email', $email)->first();
-        $tiposDeUsuariosModel = new TiposDeUsuarios();
-        $nivelUsuario = $tiposDeUsuariosModel->BuscarNivelDeUsuario($usuario['nivel']);
 
-        if (!$nivelUsuario) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Nível de usuário não encontrado'
-            ])->setStatusCode(401);
-        }
 
         if (!$usuario) {
             return $this->response->setJSON([
@@ -52,6 +49,19 @@ class AuthController extends BaseController
                 'message' => 'Usuário não encontrado'
             ])->setStatusCode(401);
         }
+
+
+        $NomeNivel = $NiveisModel->getNomeNivel($usuario['nivel']);
+
+
+        if (!$NomeNivel) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Usuario não tem permissão'
+            ])->setStatusCode(401);
+        }
+
+
 
         // Verifica se o usuário está ativo
         if ($usuario['ativo'] != true) {
@@ -89,8 +99,9 @@ class AuthController extends BaseController
                 'nome' => $usuario['nome'],
                 'email' => $usuario['email'],
                 'nivel' => $usuario['nivel'],
-                'nivel_nome' => $nivelUsuario['nivel'],
+                'nivel_nome' => $NomeNivel['nome'],
                 'ativo' => $usuario['ativo']
+
             ],
             'menu' => [
                 [
@@ -142,45 +153,45 @@ class AuthController extends BaseController
     }
 
     public function validarToken()
-{
-    $request = service('request');
-    $authHeader = $request->getHeaderLine('Authorization');
+    {
+        $request = service('request');
+        $authHeader = $request->getHeaderLine('Authorization');
 
-    if (!$authHeader) {
-        return $this->response->setJSON([
-            'success' => false,
-            'message' => 'Token não fornecido'
-        ])->setStatusCode(401);
+        if (!$authHeader) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Token não fornecido'
+            ])->setStatusCode(401);
+        }
+
+        // Remove o prefixo "Bearer "
+        $token = null;
+        if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            $token = $matches[1];
+        }
+
+        if (!$token) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Token inválido'
+            ])->setStatusCode(401);
+        }
+
+        try {
+            $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Token válido',
+                'data' => (array) $decoded
+            ])->setStatusCode(200);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Token inválido ou expirado',
+                'error' => $e->getMessage()
+            ])->setStatusCode(401);
+        }
     }
-
-    // Remove o prefixo "Bearer "
-    $token = null;
-    if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-        $token = $matches[1];
-    }
-
-    if (!$token) {
-        return $this->response->setJSON([
-            'success' => false,
-            'message' => 'Token inválido'
-        ])->setStatusCode(401);
-    }
-
-    try {
-        $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Token válido',
-            'data' => (array) $decoded
-        ])->setStatusCode(200);
-    } catch (\Exception $e) {
-        return $this->response->setJSON([
-            'success' => false,
-            'message' => 'Token inválido ou expirado',
-            'error' => $e->getMessage()
-        ])->setStatusCode(401);
-    }
-}
 
 }

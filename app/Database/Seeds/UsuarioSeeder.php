@@ -14,15 +14,15 @@ class UsuarioSeeder extends Seeder
         // Insere usuários de teste
         $data = [
             [
-                'nome'  => 'Administrador',
-                'email' => 'admin@teste.com',
+                'nome'  => 'Leandro Adminer',
+                'email' => 'teste1@email.com',
                 'senha' => password_hash('123456', PASSWORD_DEFAULT),
                 'ativo' => 1,
                 'nivel' => 1,
             ],
             [
-                'nome'  => 'Usuário Comum',
-                'email' => 'user@teste.com',
+                'nome'  => 'Roberio Padrão',
+                'email' => 'teste2@email.com',
                 'senha' => password_hash('123456', PASSWORD_DEFAULT),
                 'ativo' => 1,
                 'nivel' => 2,
