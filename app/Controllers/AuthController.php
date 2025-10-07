@@ -91,6 +91,12 @@ class AuthController extends BaseController
         // Gera o token
         $jwt = JWT::encode($payload, env('JWT_SECRET'), 'HS256');
 
+
+        $menu = [];
+
+        $menusConfig = include(APPPATH . 'Config/Menus.php');
+        $menu = $menusConfig[$usuario['nivel']] ?? $menusConfig[2];
+
         return $this->response->setJSON([
             'success' => true,
             'message' => 'Login realizado com sucesso',
@@ -103,51 +109,11 @@ class AuthController extends BaseController
                 'ativo' => $usuario['ativo']
 
             ],
-            'menu' => [
-                [
-                    'id' => 1,
-                    'nome' => 'Dashboard',
-                    'rota' => '/dashboard',
-                    'icone' => 'fas fa-tachometer-alt',
-                    'nivel' => 0,
-                    'submenu' => [
-                        [
-                            'id' => 1,
-                            'nome' => 'Dashboard',
-                            'rota' => '/dashboard',
-                            'nivel' => 0
-                        ],
-                    ]
-                ],
-                [
-                    'id' => 2,
-                    'nome' => 'Usuários',
-                    'rota' => '/usuarios',
-                    'icone' => 'fas fa-users',
-                    'nivel' => 1
-                ],
-                [
-                    'id' => 3,
-                    'nome' => 'Clientes',
-                    'rota' => '/clientes',
-                    'icone' => 'fas fa-user-friends',
-                    'nivel' => 1
-                ],
-                [
-                    'id' => 4,
-                    'nome' => 'Produtos',
-                    'rota' => '/produtos',
-                    'icone' => 'fas fa-boxes',
-                    'nivel' => 1
-                ],
-                [
-                    'id' => 5,
-                    'nome' => 'Pedidos',
-                    'rota' => '/pedidos',
-                    'icone' => 'fas fa-shopping-cart',
-                    'nivel' => 1
-                ],
-            ],
+
+            'menu' => $menu,
+
+            
+
             'token' => $jwt
         ]);
     }

@@ -36,7 +36,7 @@ class UsuarioController extends BaseController
                 'total' => $pager->getTotal(),
                 'porPagina' => $perPage,
                 'paginaAtual' => $pager->getCurrentPage(),
-                'ultimaPagina' => $pager->getPageCount()
+                'ultimaPagina' => $pager->getPageCount(),
             ],
 
         ]);
@@ -45,6 +45,14 @@ class UsuarioController extends BaseController
     public function show($id = null)
     {
         $usuario = $this->usuarioModel->find($id);
+
+        if (!$usuario) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Usuário não encontrado',
+            ])->setStatusCode(404);
+        }
+
         return $this->response->setJSON($usuario);
     }
 
