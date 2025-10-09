@@ -14,7 +14,7 @@ $routes->group('login', function ($routes) {
 
 });
 
-// Rotas de Usuarios do sistema
+// Rotas de Usuarios
 $routes->group('usuarios', ['filter' => 'autenticacao'], function ($routes) {
     $routes->get(
         '',
@@ -48,6 +48,7 @@ $routes->group('usuarios', ['filter' => 'autenticacao'], function ($routes) {
 
 });
 
+// Rotas de Niveis
 $routes->group('papeis', ['filter' => 'autenticacao'], function ($routes) {
     $routes->get(
         '',
@@ -81,6 +82,7 @@ $routes->group('papeis', ['filter' => 'autenticacao'], function ($routes) {
 
 });
 
+// Rotas de Permissoes
 $routes->group('permissoes', ['filter' => 'autenticacao'], function ($routes) {
     $routes->get(
         '',

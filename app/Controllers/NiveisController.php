@@ -3,177 +3,167 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
-use App\Models\NiveisModel;
-use App\Models\PermissoesModel;
-use App\Models\NiveisXPermissoes;
+use App\Services\NivelService;
+use App\Exceptions\NivelException;
 
 class NiveisController extends BaseController
 {
-    protected $niveisModel;
-    protected $permissoesModel;
-    protected $niveisXPermissoesModel;
+    private $nivelService;
 
     public function __construct()
     {
-        $this->niveisModel = new NiveisModel();
-        $this->permissoesModel = new PermissoesModel();
-        $this->niveisXPermissoesModel = new NiveisXPermissoes();
+        // ✅ Agora APENAS o service é necessário
+        $this->nivelService = new NivelService();
     }
+
 
     public function index()
     {
-        $perPage = 10;
-        $page = $this->request->getVar('page') ?? 1;
+        try {
+            $limite = intval($this->request->getVar('limite') ?? 10);
+            $pagina = intval($this->request->getVar('pagina') ?? 1);
 
-        $niveis = $this->niveisModel->orderBy('id', 'DESC')->paginate($perPage);
-        $pager = $this->niveisModel->pager;
+            // Pega todos os filtros da URL (exceto limite/pagina)
+            $filtros = $this->request->getGet(); 
+            unset($filtros['limite'], $filtros['pagina']);
 
-        foreach ($niveis as &$nivel) {
-            $nivel['permissoes'] = $this->permissoesModel->BuscarPermissoesPeloNivel($nivel['id']);
+            $resultado = $this->nivelService->listar($limite, $pagina, $filtros);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'Registros' => $resultado['registros'],
+                'paginacao' => $resultado['paginacao'],
+                'filtros' => $filtros
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->tratarErro($e);
         }
-
-        return $this->response->setJSON([
-            'success' => true,
-            'Registros' => $niveis,
-            'paginacao' => [
-                'total' => $pager->getTotal(),
-                'porPagina' => $perPage,
-                'paginaAtual' => $pager->getCurrentPage(),
-                'ultimaPagina' => $pager->getPageCount(),
-            ],
-        ]);
     }
 
+    /**
+     * Busca um nível específico
+     * GET /niveis/{id}
+     */
     public function show($id = null)
     {
-        $nivel = $this->niveisModel->find($id);
+        try {
+            $nivel = $this->nivelService->buscar((int) $id);
 
-        if (!$nivel) {
+            return $this->response->setJSON([
+                'success' => true,
+                'Registros' => $nivel
+            ]);
+
+        } catch (NivelException $e) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Nível não encontrado',
-            ])->setStatusCode(404);
+                'message' => $e->getMessage()
+            ])->setStatusCode($e->getCode());
+
+        } catch (\Exception $e) {
+            return $this->tratarErro($e);
         }
-
-        $nivel['permissoes'] = $this->permissoesModel->BuscarPermissoesPeloNivel($nivel['id']);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'Registros' => $nivel,
-        ]);
     }
 
+    /**
+     * Cria um novo nível
+     * POST /niveis
+     * Body: { "nome": "Nome do Nível" }
+     */
     public function create()
     {
-        $data = $this->request->getPost();
+        try {
+            $data = $this->request->getJSON(true);
+            $nivel = $this->nivelService->criar($data);
 
-        if (empty($data) || empty($data['nome'])) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Nível criado com sucesso',
+                'registro' => $nivel
+            ])->setStatusCode(201);
+
+        } catch (NivelException $e) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'O campo nome é obrigatório',
-            ])->setStatusCode(400);
+                'message' => $e->getMessage()
+            ])->setStatusCode($e->getCode());
+
+        } catch (\Exception $e) {
+            return $this->tratarErro($e);
         }
-
-        unset($data['permissoes']);
-
-        if (!$this->niveisModel->insert($data)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Erro ao criar nível',
-                'errors' => $this->niveisModel->errors()
-            ])->setStatusCode(400);
-        }
-
-        $nivelId = $this->niveisModel->getInsertID();
-
-        // Vincula todas permissões existentes com allow = 0
-        $todasPermissoes = $this->permissoesModel->findAll();
-        foreach ($todasPermissoes as $permissao) {
-            $this->niveisXPermissoesModel->insert([
-                'nivel_id' => $nivelId,
-                'permissao_id' => $permissao['id'],
-                'allow' => 0
-            ]);
-        }
-
-        $nivel = $this->niveisModel->find($nivelId);
-        $nivel['permissoes'] = $this->permissoesModel->BuscarPermissoesPeloNivel($nivelId);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Nível criado com sucesso.',
-            'registro' => $nivel
-        ]);
     }
 
+    /**
+     * Atualiza um nível existente
+     * PUT /niveis/{id}
+     * Body: { "nome": "Novo Nome", "permissoes": [...] }
+     */
     public function update($id = null)
     {
-        $data = $this->request->getPost();
-
-        if (empty($data) || empty($data['nome'])) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'O campo nome é obrigatório',
-            ])->setStatusCode(400);
-        }
-
-        $permissoes = !empty($data['permissoes']) ? json_decode($data['permissoes'], true) : [];
-        unset($data['permissoes']);
-
-        // Atualiza o nível
-        if (!$this->niveisModel->update($id, $data)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Erro ao atualizar nível',
-                'errors' => $this->niveisModel->errors()
-            ])->setStatusCode(400);
-        }
-
-        // Atualiza as permissões se vieram no corpo da requisição
-        if (!empty($permissoes)) {
-            $this->niveisXPermissoesModel->where('nivel_id', $id)->delete();
-
-            foreach ($permissoes as $permissao) {
-                $this->niveisXPermissoesModel->insert([
-                    'nivel_id' => $id,
-                    'permissao_id' => $permissao['id'],
-                    'allow' => $permissao['allow'] ?? 0
-                ]);
+        try {
+            $data = $this->request->getJSON(true);
+            
+            // Se as permissões vieram como string JSON, decodifica
+            if (isset($data['permissoes']) && is_string($data['permissoes'])) {
+                $data['permissoes'] = json_decode($data['permissoes'], true);
             }
+
+            $nivel = $this->nivelService->atualizar((int) $id, $data);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Nível atualizado com sucesso',
+                'registro' => $nivel
+            ]);
+
+        } catch (NivelException $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ])->setStatusCode($e->getCode());
+
+        } catch (\Exception $e) {
+            return $this->tratarErro($e);
         }
-
-        $nivel = $this->niveisModel->find($id);
-        $nivel['permissoes'] = $this->permissoesModel->BuscarPermissoesPeloNivel($id);
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Nível atualizado com sucesso',
-            'registro' => $nivel
-        ]);
     }
 
+    /**
+     * Deleta um nível
+     * DELETE /niveis/{id}
+     */
     public function delete($id = null)
     {
-        if (!$this->niveisModel->find($id)) {
+        try {
+            $this->nivelService->deletar((int) $id);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Nível deletado com sucesso'
+            ]);
+
+        } catch (NivelException $e) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Nível não encontrado',
-            ])->setStatusCode(404);
-        }
+                'message' => $e->getMessage()
+            ])->setStatusCode($e->getCode());
 
-        $this->niveisXPermissoesModel->where('nivel_id', $id)->delete();
-
-        if (!$this->niveisModel->delete($id)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Erro ao deletar nível',
-                'errors' => $this->niveisModel->errors()
-            ])->setStatusCode(400);
+        } catch (\Exception $e) {
+            return $this->tratarErro($e);
         }
+    }
+
+    /**
+     * Tratamento genérico de erros
+     */
+    private function tratarErro(\Exception $e): \CodeIgniter\HTTP\Response
+    {
+        log_message('error', '[NiveisController] ' . $e->getMessage());
 
         return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Nível deletado com sucesso',
-        ]);
+            'success' => false,
+            'message' => 'Erro interno do servidor',
+            'error' => ENVIRONMENT === 'development' ? $e->getMessage() : null
+        ])->setStatusCode(500);
     }
 }

@@ -9,6 +9,13 @@ use App\Models\NiveisXPermissoes;
 
 class PermissoesController extends BaseController
 {
+    /*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * Retorna todas as permissões cadastradas no sistema.
+     *
+     * @return \CodeIgniter\HTTP\Response
+     */
+    /*******  dadf6ce4-78c0-436a-b2b4-f986c8e598a2  *******/
     public function index()
     {
         $model = new PermissoesModel();
@@ -121,9 +128,9 @@ class PermissoesController extends BaseController
             ])->setStatusCode(404);
         }
 
-            $data = $this->request->getJSON(true);
+        $data = $this->request->getJSON(true);
 
-        
+
         if (empty($data['nome'])) {
             return $this->response->setJSON([
                 'success' => false,
@@ -134,14 +141,14 @@ class PermissoesController extends BaseController
 
         // Decodifica as permissões enviadas como JSON no FormData
         $permissoes = [];
-            if (!empty($data['permissoes']) && is_array($data['permissoes'])) {
-                foreach ($data['permissoes'] as $p) {
-                    $permissoes[] = [
-                        'permissao_id' => $p['permissao_id'] ?? null,
-                        'allow' => isset($p['allow']) ? (int)$p['allow'] : 0
-                    ];
-                }
+        if (!empty($data['permissoes']) && is_array($data['permissoes'])) {
+            foreach ($data['permissoes'] as $p) {
+                $permissoes[] = [
+                    'permissao_id' => $p['permissao_id'] ?? null,
+                    'allow' => isset($p['allow']) ? (int) $p['allow'] : 0
+                ];
             }
+        }
 
         // Atualiza o nome do nível
         if (!$niveisModel->update($nivelId, ['nome' => $data['nome']])) {
