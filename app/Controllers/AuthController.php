@@ -37,7 +37,8 @@ class AuthController extends BaseController
                 'message' => 'Login realizado com sucesso',
                 'usuario' => $resultado['usuario'],
                 'menu' => $resultado['menu'],
-                'token' => $resultado['token']
+                'token' => $resultado['token'],
+                'expirationTime' => $resultado['expirationTime'],
             ]);
         } catch (\Exception $e) {
             return $this->tratarErro($e);

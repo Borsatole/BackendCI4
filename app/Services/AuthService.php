@@ -52,11 +52,13 @@ class AuthService
         $payload = $this->criarPayloadJWT($usuario);
         $token = $this->gerarJWT($payload);
         $menu = $this->buscaMenu($usuario);
+        $expirationTime = $payload['exp'];
 
         return [
             'usuario' => $usuario,
             'menu' => $menu,
-            'token' => $token
+            'token' => $token,
+            'expirationTime' => $expirationTime
         ];
     }
 
@@ -70,7 +72,8 @@ class AuthService
         return [
             'iss' => base_url(),
             'iat' => time(),
-            'exp' => time() + 3600,
+            // 'exp' => time() + 3600,
+            'exp' => time() + 10,
             'sub' => $usuario['id'],
             'nivel' => $usuario['nivel']
         ];
