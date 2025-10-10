@@ -82,5 +82,22 @@ class Usuario extends Model
         }
         return $this->update($id, ['deleted_at' => null]);
     }
+
+    public function listarComPaginacao(int $limite = 10, int $pagina = 1, array $filtros = []): array
+{
+    $usuarios = $this->orderBy('id', 'DESC');
+
+    // pega os nomes das colunas da tabela
+    $colunas = $this->db->getFieldNames($this->table);
+
+    foreach ($filtros as $campo => $valor) {
+        if (in_array($campo, $colunas)) {
+            $usuarios->like($campo, $valor);
+        }
+    }
+
+    return $usuarios->paginate($limite, 'default', $pagina);
+}
+
 }
 

@@ -18,7 +18,7 @@ $routes->group('login', function ($routes) {
 $routes->group('usuarios', ['filter' => 'autenticacao'], function ($routes) {
     $routes->get(
         '',
-        'UsuarioController::index',
+        'UsuarioController2::index',
         ['filter' => 'permission:usuario.visualizar']
     );
 

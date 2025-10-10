@@ -72,8 +72,8 @@ class AuthService
         return [
             'iss' => base_url(),
             'iat' => time(),
-            // 'exp' => time() + 3600,
-            'exp' => time() + 10,
+            'exp' => time() + 3600,
+            // 'exp' => time() + 10,
             'sub' => $usuario['id'],
             'nivel' => $usuario['nivel']
         ];
